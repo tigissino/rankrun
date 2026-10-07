@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RankRun</title>
+
+<style>
+body {
+margin: 0;
+font-family: Arial, sans-serif;
+background: #10131a;
+color: white;
+text-align: center;
+}
+
+.container {
+max-width: 700px;
+margin: auto;
+padding: 25px;
+}
+
+h1 {
+font-size: 42px;
+margin-bottom: 5px;
+}
+
+.subtitle {
+color: #aaa;
+margin-bottom: 25px;
+}
+
+.card {
+background: #1b202b;
+border-radius: 20px;
+padding: 25px;
+margin-bottom: 20px;
+}
+
+.rank {
+font-size: 32px;
+font-weight: bold;
+}
+
+.timer {
+font-size: 75px;
+font-weight: bold;
+margin: 25px 0;
+}
+
+button {
+border: none;
+border-radius: 12px;
+padding: 13px 22px;
+margin: 5px;
+font-size: 17px;
+font-weight: bold;
+cursor: pointer;
+}
+
+.start {
+background: white;
+color: black;
+}
+
+.reset {
+background: #8b2020;
+color: white;
+}
+
+.progressBackground {
+background: #343a48;
+height: 14px;
+border-radius: 20px;
+margin-top: 25px;
+}
+
+.progress {
+background: white;
+height: 14px;
+width: 0%;
+border-radius: 20px;
+}
+
+.rankList {
+text-align: left;
+}
+
+.rankRow {
+display: flex;
+justify-content: space-between;
+padding: 10px;
+border-bottom: 1px solid #303644;
+}
+
+.current {
+font-weight: bold;
+background: #292f3c;
+border-radius: 8px;
+}
+
+.small {
+color: #aaa;
+font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>RankRun</h1>
+<div class="subtitle">Race your way from Bronze to Olympian.</div>
+
+<div class="card">
+
+<div>Current Rank</div>
+<div id="rank" class="rank">Bronze I</div>
+
+<div id="target">Target: 30 minutes</div>
+
+<div id="timer" class="timer">00:00</div>
+
+<button class="start" onclick="startTimer()">START</button>
+<button onclick="pauseTimer()">PAUSE</button>
+<button class="reset" onclick="resetTimer()">RESET</button>
+
+<div class="progressBackground">
+<div id="progress" class="progress"></div>
+</div>
+
+<div id="percent" class="small">0% of target</div>
+
+</div>
+
+<div class="card">
+
+<h2>Rank Progression</h2>
+
+<div id="rankList" class="rankList"></div>
+
+</div>
+
+</div>
+
+<script>
+
+const ranks = [
+["Bronze I", 30],
+["Bronze II", 29],
+["Bronze III", 28],
+
+["Silver I", 27],
+["Silver II", 26],
+["Silver III", 25],
+
+["Gold I", 24],
+["Gold II", 23],
+["Gold III", 22],
+
+["Platinum I", 21],
+["Platinum II", 20],
+["Platinum III", 19],
+
+["Diamond I", 18],
+["Diamond II", 17],
+["Diamond III", 16],
+
+["Elite I", 15],
+["Elite II", 14],
+["Elite III", 13],
+
+["Champion I", 12],
+["Champion II", 11.5],
+["Champion III", 11],
+
+["Olympian", 10]
+];
+
+let rankIndex = 0;
+let seconds = 0;
+let running = false;
+let interval;
+
+function updateScreen() {
+
+let currentRank = ranks[rankIndex];
+
+document.getElementById("rank").innerText = currentRank[0];
+
+document.getElementById("target").innerText =
+"Target: " + currentRank[1] + " minutes";
+
+let minutes = Math.floor(seconds / 60);
+let secs = Math.floor(seconds % 60);
+
+document.getElementById("timer").innerText =
+String(minutes).padStart(2, "0") + ":" +
+String(secs).padStart(2, "0");
+
+let targetSeconds = currentRank[1] * 60;
+
+let percent = Math.min(
+100,
+(seconds / targetSeconds) * 100
+);
+
+document.getElementById("progress").style.width =
+percent + "%";
+
+document.getElementById("percent").innerText =
+Math.floor(percent) + "% of target";
+
+createRankList();
+}
+
+function createRankList() {
+
+let list = "";
+
+for (let i = 0; i < ranks.length; i++) {
+
+let current = i === rankIndex ? "current" : "";
+
+list += `
+<div class="rankRow ${current}">
+<span>${ranks[i][0]}</span>
+<span>${ranks[i][1]} min</span>
+</div>
+`;
+}
+
+document.getElementById("rankList").innerHTML = list;
+}
+
+function startTimer() {
+
+if (running) return;
+
+running = true;
+
+interval = setInterval(function() {
+
+seconds++;
+
+let targetSeconds = ranks[rankIndex][1] * 60;
+
+if (seconds >= targetSeconds) {
+
+if (rankIndex < ranks.length - 1) {
+
+rankIndex++;
+seconds = 0;
+
+alert(
+"RANK UP! You reached " +
+ranks[rankIndex][0] + "!"
+);
+
+} else {
+
+running = false;
+clearInterval(interval);
+
+alert("🏆 YOU REACHED OLYMPIAN!");
+
+}
+}
+
+updateScreen();
+
+}, 1000);
+}
+
+function pauseTimer() {
+
+running = false;
+clearInterval(interval);
+
+}
+
+function resetTimer() {
+
+running = false;
+clearInterval(interval);
+
+seconds = 0;
+rankIndex = 0;
+
+updateScreen();
+
+}
+
+updateScreen();
+
+</script>
+
+</body>
+</html>
