@@ -39,6 +39,11 @@ margin-bottom: 20px;
 .rank {
 font-size: 32px;
 font-weight: bold;
+margin: 10px 0;
+}
+
+.hiddenRank {
+color: #aaa;
 }
 
 .timer {
@@ -76,10 +81,48 @@ display: flex;
 justify-content: space-between;
 padding: 10px;
 border-bottom: 1px solid #303644;
+font-weight: bold;
+}
+
+/* Rank Colors */
+
+.bronze {
+color: #a0522d;
+}
+
+.silver {
+color: silver;
+}
+
+.gold {
+color: #ffd700;
+}
+
+.platinum {
+color: #87ceeb;
+}
+
+.diamond {
+color: #174ea6;
+}
+
+.elite {
+color: #32cd32;
+}
+
+.champion {
+background: linear-gradient(90deg, white, #ff69b4, white);
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+}
+
+.olympian {
+background: linear-gradient(90deg, #ff3030, #ffd700, white, #ffd700, #ff3030);
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
 }
 
 .current {
-font-weight: bold;
 background: #292f3c;
 border-radius: 8px;
 }
@@ -96,19 +139,31 @@ font-size: 14px;
 <div class="container">
 
 <h1>RankRun</h1>
-<div class="subtitle">Race your way from Bronze to Olympian.</div>
+
+<div class="subtitle">
+Race your way from Bronze to Olympian.
+</div>
 
 <div class="card">
 
 <div>Current Rank</div>
-<div id="rank" class="rank">Bronze I</div>
 
-<div id="target">Target: 30 minutes</div>
+<div id="rank" class="rank hiddenRank">
+???
+</div>
 
-<div id="timer" class="timer">00:00</div>
+<div id="target">
+Target: 30 minutes
+</div>
+
+<div id="timer" class="timer">
+00:00
+</div>
 
 <button class="start" onclick="startTimer()">START</button>
+
 <button onclick="pauseTimer()">PAUSE</button>
+
 <button class="reset" onclick="resetTimer()">RESET</button>
 
 </div>
@@ -126,35 +181,35 @@ font-size: 14px;
 <script>
 
 const ranks = [
-["Bronze I", 30],
-["Bronze II", 29],
-["Bronze III", 28],
+["Bronze I", 30, "bronze"],
+["Bronze II", 29, "bronze"],
+["Bronze III", 28, "bronze"],
 
-["Silver I", 27],
-["Silver II", 26],
-["Silver III", 25],
+["Silver I", 27, "silver"],
+["Silver II", 26, "silver"],
+["Silver III", 25, "silver"],
 
-["Gold I", 24],
-["Gold II", 23],
-["Gold III", 22],
+["Gold I", 24, "gold"],
+["Gold II", 23, "gold"],
+["Gold III", 22, "gold"],
 
-["Platinum I", 21],
-["Platinum II", 20],
-["Platinum III", 19],
+["Platinum I", 21, "platinum"],
+["Platinum II", 20, "platinum"],
+["Platinum III", 19, "platinum"],
 
-["Diamond I", 18],
-["Diamond II", 17],
-["Diamond III", 16],
+["Diamond I", 18, "diamond"],
+["Diamond II", 17, "diamond"],
+["Diamond III", 16, "diamond"],
 
-["Elite I", 15],
-["Elite II", 14],
-["Elite III", 13],
+["Elite I", 15, "elite"],
+["Elite II", 14, "elite"],
+["Elite III", 13, "elite"],
 
-["Champion I", 12],
-["Champion II", 11.5],
-["Champion III", 11],
+["Champion I", 12, "champion"],
+["Champion II", 11.5, "champion"],
+["Champion III", 11, "champion"],
 
-["Olympian", 10]
+["Olympian", 10, "olympian"]
 ];
 
 let rankIndex = 0;
@@ -166,7 +221,7 @@ function updateScreen() {
 
 let currentRank = ranks[rankIndex];
 
-document.getElementById("rank").innerText = currentRank[0];
+document.getElementById("rank").innerText = "???";
 
 document.getElementById("target").innerText =
 "Target: " + currentRank[1] + " minutes";
@@ -181,6 +236,17 @@ String(secs).padStart(2, "0");
 createRankList();
 }
 
+function revealRank() {
+
+let currentRank = ranks[rankIndex];
+
+let rankElement = document.getElementById("rank");
+
+rankElement.innerText = currentRank[0];
+
+rankElement.className = "rank " + currentRank[2];
+}
+
 function createRankList() {
 
 let list = "";
@@ -190,7 +256,7 @@ for (let i = 0; i < ranks.length; i++) {
 let current = i === rankIndex ? "current" : "";
 
 list += `
-<div class="rankRow ${current}">
+<div class="rankRow ${current} ${ranks[i][2]}">
 <span>${ranks[i][0]}</span>
 <span>${ranks[i][1]} min</span>
 </div>
@@ -216,15 +282,21 @@ if (seconds >= targetSeconds) {
 
 if (rankIndex < ranks.length - 1) {
 
-rankIndex++;
-seconds = 0;
+revealRank();
 
 alert(
-"RANK UP! You reached " +
+"RANK COMPLETE!\nYou reached " +
 ranks[rankIndex][0] + "!"
 );
 
+rankIndex++;
+seconds = 0;
+
+updateScreen();
+
 } else {
+
+revealRank();
 
 running = false;
 clearInterval(interval);
@@ -232,6 +304,7 @@ clearInterval(interval);
 alert("🏆 YOU REACHED OLYMPIAN!");
 
 }
+
 }
 
 updateScreen();
@@ -253,6 +326,9 @@ clearInterval(interval);
 
 seconds = 0;
 rankIndex = 0;
+
+document.getElementById("rank").innerText = "???";
+document.getElementById("rank").className = "rank hiddenRank";
 
 updateScreen();
 
