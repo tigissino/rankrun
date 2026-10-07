@@ -67,20 +67,6 @@ background: #8b2020;
 color: white;
 }
 
-.progressBackground {
-background: #343a48;
-height: 14px;
-border-radius: 20px;
-margin-top: 25px;
-}
-
-.progress {
-background: white;
-height: 14px;
-width: 0%;
-border-radius: 20px;
-}
-
 .rankList {
 text-align: left;
 }
@@ -124,12 +110,6 @@ font-size: 14px;
 <button class="start" onclick="startTimer()">START</button>
 <button onclick="pauseTimer()">PAUSE</button>
 <button class="reset" onclick="resetTimer()">RESET</button>
-
-<div class="progressBackground">
-<div id="progress" class="progress"></div>
-</div>
-
-<div id="percent" class="small">0% of target</div>
 
 </div>
 
@@ -197,19 +177,6 @@ let secs = Math.floor(seconds % 60);
 document.getElementById("timer").innerText =
 String(minutes).padStart(2, "0") + ":" +
 String(secs).padStart(2, "0");
-
-let targetSeconds = currentRank[1] * 60;
-
-let percent = Math.min(
-100,
-(seconds / targetSeconds) * 100
-);
-
-document.getElementById("progress").style.width =
-percent + "%";
-
-document.getElementById("percent").innerText =
-Math.floor(percent) + "% of target";
 
 createRankList();
 }
