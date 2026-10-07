@@ -34,6 +34,34 @@ background: #1b202b;
 border-radius: 20px;
 padding: 25px;
 margin-bottom: 20px;
+position: relative;
+}
+
+.prBadge {
+position: absolute;
+top: 15px;
+right: 15px;
+background: #292f3c;
+border-radius: 12px;
+padding: 8px 14px;
+text-align: right;
+font-size: 13px;
+}
+
+.prBadge .prLabel {
+color: #aaa;
+font-size: 11px;
+margin-bottom: 3px;
+}
+
+.prBadge .prRank {
+font-weight: bold;
+font-size: 15px;
+}
+
+.prBadge .prTime {
+font-size: 13px;
+color: #ddd;
 }
 
 .rank {
@@ -65,6 +93,11 @@ cursor: pointer;
 .start {
 background: white;
 color: black;
+}
+
+.finish {
+background: #2a7a3b;
+color: white;
 }
 
 .reset {
@@ -141,19 +174,21 @@ font-size: 14px;
 <h1>RankRun</h1>
 
 <div class="subtitle">
-Race your way from Bronze to Olympian.
+Run your two miles. Pause when you finish. Chase your PR.
 </div>
 
 <div class="card">
 
-<div>Current Rank</div>
+<div class="prBadge" id="prBadge">
+<div class="prLabel">YOUR PR</div>
+<div class="prRank" id="prRankText">None yet</div>
+<div class="prTime" id="prTimeText">--:--</div>
+</div>
+
+<div>Current Result</div>
 
 <div id="rank" class="rank hiddenRank">
 ???
-</div>
-
-<div id="target">
-Target: 30 minutes
 </div>
 
 <div id="timer" class="timer">
@@ -164,13 +199,15 @@ Target: 30 minutes
 
 <button onclick="pauseTimer()">PAUSE</button>
 
+<button class="finish" onclick="finishRun()">FINISH</button>
+
 <button class="reset" onclick="resetTimer()">RESET</button>
 
 </div>
 
 <div class="card">
 
-<h2>Rank Progression</h2>
+<h2>Rank Thresholds</h2>
 
 <div id="rankList" class="rankList"></div>
 
@@ -180,6 +217,8 @@ Target: 30 minutes
 
 <script>
 
+// Each rank now represents a two-mile time in minutes.
+// Faster time = better rank. List is ordered slowest to fastest.
 const ranks = [
 ["Bronze I", 30, "bronze"],
 ["Bronze II", 29, "bronze"],
@@ -212,51 +251,75 @@ const ranks = [
 ["Olympian", 10, "olympian"]
 ];
 
-let rankIndex = 0;
 let seconds = 0;
 let running = false;
 let interval;
 
+// Personal record, stored across sessions in this browser.
+let prSeconds = loadPR();
+
+function loadPR() {
+let saved = localStorage.getItem("rankRunPR");
+return saved ? parseFloat(saved) : null;
+}
+
+function savePR(value) {
+localStorage.setItem("rankRunPR", value);
+}
+
+// Given a time in seconds, find the best rank achieved (fastest
+// threshold that the time is equal to or faster than).
+function getRankForTime(timeSeconds) {
+let timeMinutes = timeSeconds / 60;
+let achieved = null;
+
+for (let i = 0; i < ranks.length; i++) {
+if (timeMinutes <= ranks[i][1]) {
+achieved = ranks[i];
+}
+}
+
+return achieved;
+}
+
+function formatTime(totalSeconds) {
+let minutes = Math.floor(totalSeconds / 60);
+let secs = Math.floor(totalSeconds % 60);
+return String(minutes).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+}
+
 function updateScreen() {
-
-let currentRank = ranks[rankIndex];
-
-document.getElementById("rank").innerText = "???";
-
-document.getElementById("target").innerText =
-"Target: " + currentRank[1] + " minutes";
-
-let minutes = Math.floor(seconds / 60);
-let secs = Math.floor(seconds % 60);
-
-document.getElementById("timer").innerText =
-String(minutes).padStart(2, "0") + ":" +
-String(secs).padStart(2, "0");
-
+document.getElementById("timer").innerText = formatTime(seconds);
+updatePRBadge();
 createRankList();
 }
 
-function revealRank() {
+function updatePRBadge() {
+let rankTextEl = document.getElementById("prRankText");
+let timeTextEl = document.getElementById("prTimeText");
 
-let currentRank = ranks[rankIndex];
-
-let rankElement = document.getElementById("rank");
-
-rankElement.innerText = currentRank[0];
-
-rankElement.className = "rank " + currentRank[2];
+if (prSeconds === null) {
+rankTextEl.innerText = "None yet";
+rankTextEl.className = "prRank";
+timeTextEl.innerText = "--:--";
+} else {
+let prRank = getRankForTime(prSeconds);
+rankTextEl.innerText = prRank ? prRank[0] : "Unranked";
+rankTextEl.className = "prRank " + (prRank ? prRank[2] : "");
+timeTextEl.innerText = formatTime(prSeconds);
+}
 }
 
 function createRankList() {
+let currentRank = getRankForTime(seconds);
 
 let list = "";
 
 for (let i = 0; i < ranks.length; i++) {
-
-let current = i === rankIndex ? "current" : "";
+let isCurrent = currentRank && ranks[i][0] === currentRank[0] ? "current" : "";
 
 list += `
-<div class="rankRow ${current} ${ranks[i][2]}">
+<div class="rankRow ${isCurrent} ${ranks[i][2]}">
 <span>${ranks[i][0]}</span>
 <span>${ranks[i][1]} min</span>
 </div>
@@ -267,71 +330,59 @@ document.getElementById("rankList").innerHTML = list;
 }
 
 function startTimer() {
-
 if (running) return;
 
 running = true;
 
 interval = setInterval(function() {
-
 seconds++;
-
-let targetSeconds = ranks[rankIndex][1] * 60;
-
-if (seconds >= targetSeconds) {
-
-if (rankIndex < ranks.length - 1) {
-
-revealRank();
-
-alert(
-"RANK COMPLETE!\nYou reached " +
-ranks[rankIndex][0] + "!"
-);
-
-rankIndex++;
-seconds = 0;
-
 updateScreen();
-
-} else {
-
-revealRank();
-
-running = false;
-clearInterval(interval);
-
-alert("🏆 YOU REACHED OLYMPIAN!");
-
-}
-
-}
-
-updateScreen();
-
 }, 1000);
 }
 
 function pauseTimer() {
-
 running = false;
 clearInterval(interval);
+}
 
+function finishRun() {
+pauseTimer();
+
+let resultRank = getRankForTime(seconds);
+let rankElement = document.getElementById("rank");
+
+if (!resultRank) {
+rankElement.innerText = "No rank yet";
+rankElement.className = "rank hiddenRank";
+alert("That time didn't hit Bronze I yet. Keep training!");
+return;
+}
+
+rankElement.innerText = resultRank[0];
+rankElement.className = "rank " + resultRank[2];
+
+let isNewPR = prSeconds === null || seconds < prSeconds;
+
+if (isNewPR) {
+prSeconds = seconds;
+savePR(prSeconds);
+updatePRBadge();
+alert("RANK UP! New PR!\nYou reached " + resultRank[0] + " with a time of " + formatTime(seconds) + "!");
+} else {
+alert("Result: " + resultRank[0] + "\nTime: " + formatTime(seconds) + "\nYour PR is still " + formatTime(prSeconds) + ".");
+}
 }
 
 function resetTimer() {
-
 running = false;
 clearInterval(interval);
 
 seconds = 0;
-rankIndex = 0;
 
 document.getElementById("rank").innerText = "???";
 document.getElementById("rank").className = "rank hiddenRank";
 
 updateScreen();
-
 }
 
 updateScreen();
