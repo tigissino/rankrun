@@ -145,13 +145,17 @@ color: #32cd32;
 
 .champion {
 background: linear-gradient(90deg, white, #ff69b4, white);
+background-clip: text;
 -webkit-background-clip: text;
+color: transparent;
 -webkit-text-fill-color: transparent;
 }
 
 .olympian {
 background: linear-gradient(90deg, #ff3030, #ffd700, white, #ffd700, #ff3030);
+background-clip: text;
 -webkit-background-clip: text;
+color: transparent;
 -webkit-text-fill-color: transparent;
 }
 
@@ -217,7 +221,7 @@ Run your two miles. Pause when you finish. Chase your PR.
 
 <script>
 
-// Each rank now represents a two-mile time in minutes.
+// Each rank represents a two-mile time in minutes.
 // Faster time = better rank. List is ordered slowest to fastest.
 const ranks = [
 ["Bronze I", 30, "bronze"],
@@ -318,10 +322,12 @@ let list = "";
 for (let i = 0; i < ranks.length; i++) {
 let isCurrent = currentRank && ranks[i][0] === currentRank[0] ? "current" : "";
 
+// The color class goes on the text spans, NOT the row, so the
+// "current" highlight background can't wipe out the gradient text.
 list += `
-<div class="rankRow ${isCurrent} ${ranks[i][2]}">
-<span>${ranks[i][0]}</span>
-<span>${ranks[i][1]} min</span>
+<div class="rankRow ${isCurrent}">
+<span class="${ranks[i][2]}">${ranks[i][0]}</span>
+<span class="${ranks[i][2]}">${ranks[i][1]} min</span>
 </div>
 `;
 }
