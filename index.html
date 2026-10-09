@@ -46,6 +46,7 @@ border-radius: 12px;
 padding: 8px 14px;
 text-align: right;
 font-size: 13px;
+cursor: pointer;
 }
 
 .prBadge .prLabel {
@@ -62,6 +63,12 @@ font-size: 15px;
 .prBadge .prTime {
 font-size: 13px;
 color: #ddd;
+}
+
+.prBadge .prDeleteHint {
+font-size: 10px;
+color: #d66;
+margin-top: 4px;
 }
 
 .rank {
@@ -101,6 +108,11 @@ color: white;
 }
 
 .reset {
+background: #8b2020;
+color: white;
+}
+
+.deletePR {
 background: #8b2020;
 color: white;
 }
@@ -183,10 +195,11 @@ Run your two miles. Pause when you finish. Chase your PR.
 
 <div class="card">
 
-<div class="prBadge" id="prBadge">
+<div class="prBadge" id="prBadge" onclick="deletePR()">
 <div class="prLabel">YOUR PR</div>
 <div class="prRank" id="prRankText">None yet</div>
 <div class="prTime" id="prTimeText">--:--</div>
+<div class="prDeleteHint" id="prDeleteHint"></div>
 </div>
 
 <div>Current Result</div>
@@ -259,16 +272,37 @@ let seconds = 0;
 let running = false;
 let interval;
 
-// Personal record, stored across sessions in this browser.
-let prSeconds = loadPR();
+// PR history: a list of all finish times (in seconds), stored across
+// sessions in this browser. The current PR is always the minimum of
+// this list. Deleting a PR removes just that one time and the next
+// best one in the list automatically becomes the new PR.
+let prHistory = loadPRHistory();
 
-function loadPR() {
-let saved = localStorage.getItem("rankRunPR");
-return saved ? parseFloat(saved) : null;
+function loadPRHistory() {
+let saved = localStorage.getItem("rankRunPRHistory");
+if (saved) {
+try {
+let parsed = JSON.parse(saved);
+if (Array.isArray(parsed)) return parsed;
+} catch (e) {}
 }
 
-function savePR(value) {
-localStorage.setItem("rankRunPR", value);
+// Migrate old single-PR storage if it exists, so nobody loses their PR.
+let oldPR = localStorage.getItem("rankRunPR");
+if (oldPR) {
+return [parseFloat(oldPR)];
+}
+
+return [];
+}
+
+function savePRHistory() {
+localStorage.setItem("rankRunPRHistory", JSON.stringify(prHistory));
+}
+
+function getCurrentPR() {
+if (prHistory.length === 0) return null;
+return Math.min(...prHistory);
 }
 
 // Given a time in seconds, find the best rank achieved (fastest
@@ -301,16 +335,58 @@ createRankList();
 function updatePRBadge() {
 let rankTextEl = document.getElementById("prRankText");
 let timeTextEl = document.getElementById("prTimeText");
+let hintEl = document.getElementById("prDeleteHint");
+
+let prSeconds = getCurrentPR();
 
 if (prSeconds === null) {
 rankTextEl.innerText = "None yet";
 rankTextEl.className = "prRank";
 timeTextEl.innerText = "--:--";
+hintEl.innerText = "";
 } else {
 let prRank = getRankForTime(prSeconds);
 rankTextEl.innerText = prRank ? prRank[0] : "Unranked";
 rankTextEl.className = "prRank " + (prRank ? prRank[2] : "");
 timeTextEl.innerText = formatTime(prSeconds);
+hintEl.innerText = "tap to delete";
+}
+}
+
+function deletePR() {
+let prSeconds = getCurrentPR();
+
+if (prSeconds === null) {
+alert("You don't have a PR yet, nothing to delete!");
+return;
+}
+
+let prRank = getRankForTime(prSeconds);
+let rankName = prRank ? prRank[0] : "Unranked";
+
+let confirmed = confirm(
+"Delete your current PR?\n" +
+rankName + " - " + formatTime(prSeconds) +
+"\n\nThis can't be undone."
+);
+
+if (!confirmed) return;
+
+// Remove just ONE occurrence of this time, in case the same time
+// happened twice. The next best time in history becomes the new PR.
+let indexToRemove = prHistory.indexOf(prSeconds);
+if (indexToRemove !== -1) {
+prHistory.splice(indexToRemove, 1);
+savePRHistory();
+updatePRBadge();
+
+let newPR = getCurrentPR();
+if (newPR === null) {
+alert("PR deleted. You don't have any recorded times left.");
+} else {
+let newRank = getRankForTime(newPR);
+alert("PR deleted. Your PR is now " + (newRank ? newRank[0] : "Unranked") + " - " + formatTime(newPR) + ".");
+}
 }
 }
 
@@ -367,15 +443,19 @@ return;
 rankElement.innerText = resultRank[0];
 rankElement.className = "rank " + resultRank[2];
 
-let isNewPR = prSeconds === null || seconds < prSeconds;
+let previousPR = getCurrentPR();
+let isNewPR = previousPR === null || seconds < previousPR;
+
+// Every finish gets added to history, so it can later be deleted
+// and the next best time will take over as PR automatically.
+prHistory.push(seconds);
+savePRHistory();
+updatePRBadge();
 
 if (isNewPR) {
-prSeconds = seconds;
-savePR(prSeconds);
-updatePRBadge();
 alert("RANK UP! New PR!\nYou reached " + resultRank[0] + " with a time of " + formatTime(seconds) + "!");
 } else {
-alert("Result: " + resultRank[0] + "\nTime: " + formatTime(seconds) + "\nYour PR is still " + formatTime(prSeconds) + ".");
+alert("Result: " + resultRank[0] + "\nTime: " + formatTime(seconds) + "\nYour PR is still " + formatTime(previousPR) + ".");
 }
 }
 
