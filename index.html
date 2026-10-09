@@ -112,11 +112,6 @@ background: #8b2020;
 color: white;
 }
 
-.deletePR {
-background: #8b2020;
-color: white;
-}
-
 .rankList {
 text-align: left;
 }
@@ -273,9 +268,9 @@ let running = false;
 let interval;
 
 // PR history: a list of all finish times (in seconds), stored across
-// sessions in this browser. The current PR is always the minimum of
-// this list. Deleting a PR removes just that one time and the next
-// best one in the list automatically becomes the new PR.
+// sessions in this browser. The current PR is always the fastest time
+// in this list. Deleting a PR removes just that one time, and the
+// next best one automatically becomes the new PR.
 let prHistory = loadPRHistory();
 
 function loadPRHistory() {
@@ -287,7 +282,7 @@ if (Array.isArray(parsed)) return parsed;
 } catch (e) {}
 }
 
-// Migrate old single-PR storage if it exists, so nobody loses their PR.
+// Migrate the old single-PR storage so nobody loses their existing PR.
 let oldPR = localStorage.getItem("rankRunPR");
 if (oldPR) {
 return [parseFloat(oldPR)];
@@ -433,6 +428,15 @@ pauseTimer();
 let resultRank = getRankForTime(seconds);
 let rankElement = document.getElementById("rank");
 
+// Every finish gets saved to history (even ones that don't hit a rank),
+// so a bad run can always be deleted later.
+let previousPR = getCurrentPR();
+let isNewPR = previousPR === null || seconds < previousPR;
+
+prHistory.push(seconds);
+savePRHistory();
+updatePRBadge();
+
 if (!resultRank) {
 rankElement.innerText = "No rank yet";
 rankElement.className = "rank hiddenRank";
@@ -442,15 +446,6 @@ return;
 
 rankElement.innerText = resultRank[0];
 rankElement.className = "rank " + resultRank[2];
-
-let previousPR = getCurrentPR();
-let isNewPR = previousPR === null || seconds < previousPR;
-
-// Every finish gets added to history, so it can later be deleted
-// and the next best time will take over as PR automatically.
-prHistory.push(seconds);
-savePRHistory();
-updatePRBadge();
 
 if (isNewPR) {
 alert("RANK UP! New PR!\nYou reached " + resultRank[0] + " with a time of " + formatTime(seconds) + "!");
